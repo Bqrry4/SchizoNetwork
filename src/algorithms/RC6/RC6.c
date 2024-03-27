@@ -42,6 +42,42 @@ void encrypt(byte_array plaintext, byte_array key, byte_array ciphertext) {
     }
 }
 
+void decrypt(byte_array ciphertext, byte_array key, byte_array plaintext) {
+    //round keys
+    word S[2 * R + 4];
+
+    key_schedule(key, S);
+    //ciphertext words
+    for (int i = 0; i < ciphertext.length; i += 16) {
+        word A, B, C, D;
+        A = get_little_endian_word(ciphertext, i);
+        B = get_little_endian_word(ciphertext, i + 4);
+        C = get_little_endian_word(ciphertext, i + 8);
+        D = get_little_endian_word(ciphertext, i + 12);
+
+        C = C - S[2 * R + 3];
+        A = A - S[2 * R + 2];
+        for (int r = R - 1; r >= 0; r--) {
+            word t = A;
+            A = B;
+            B = C;
+            C = D;
+            D = t;
+            word u = RSL(D * ((D << 1) + 1), LOGW);
+            t = RSL(B * ((B << 1) + 1), LOGW);
+            C = RSR(C - S[2 * r + 1], t) ^ u;
+            A = RSL(A - S[2 * r], u) ^ t;
+        }
+        D = D - S[1];
+        B = B - S[0];
+
+        insert_word(plaintext, i, A);
+        insert_word(plaintext, i + 4, B);
+        insert_word(plaintext, i + 8, C);
+        insert_word(plaintext, i + 12, D);
+    }
+}
+
 word get_little_endian_word(byte_array array, int index) {
     byte first_byte = index < array.length ? array.data[index] : 0;
     byte second_byte = index + 1 < array.length ? (array.data[index + 1] << 8) : 0;

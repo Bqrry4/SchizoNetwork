@@ -15,6 +15,8 @@
 
 void encrypt(byte_array plaintext, byte_array key, byte_array ciphertext);
 
+void decrypt(byte_array ciphertext, byte_array key, byte_array plaintext);
+
 void key_schedule(byte_array key, word *S);
 
 word get_little_endian_word(byte_array array, int index);
