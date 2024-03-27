@@ -58,11 +58,11 @@ void decrypt(byte_array ciphertext, byte_array key, byte_array plaintext) {
         C = C - S[2 * R + 3];
         A = A - S[2 * R + 2];
         for (int r = R - 1; r >= 0; r--) {
-            word t = A;
-            A = B;
-            B = C;
-            C = D;
-            D = t;
+            word t = D;
+            D = C;
+            C = B;
+            B = A;
+            A = t;
             word u = RSL(D * ((D << 1) + 1), LOGW);
             t = RSL(B * ((B << 1) + 1), LOGW);
             C = RSR(C - S[2 * r + 1], t) ^ u;
