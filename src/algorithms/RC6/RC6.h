@@ -8,6 +8,23 @@
 #include "../../commons/data_types.h"
 
 #define W 32
+#define LOGW 5
 #define R 20
+#define P 0xB7E15163
+#define Q 0x9E3779B9
+
+void encrypt(byte_array plaintext, byte_array key, byte_array ciphertext);
+
+void key_schedule(byte_array key, word *S);
+
+word get_little_endian_word(byte_array array, int index);
+
+void insert_word(byte_array array, int index, word le_word);
+
+int max(int a, int b);
+
+word RSR(word a, word b);
+
+word RSL(word a, word b);
 
 #endif //SI_PROIECT_RC6_H
