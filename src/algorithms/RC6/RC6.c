@@ -5,7 +5,6 @@
 #include <malloc.h>
 #include "RC6.h"
 
-//Encrypts null-terminated byte array
 void encrypt(byte_array plaintext, byte_array key, byte_array ciphertext) {
     //round keys
     word S[2 * R + 4];
