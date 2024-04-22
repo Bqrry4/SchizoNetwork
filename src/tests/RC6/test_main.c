@@ -2,6 +2,8 @@
 // Created by radu on 21.04.2024.
 //
 
-int main() {
+#include "test_cases.h"
 
+int main() {
+    execute_tests();
 }

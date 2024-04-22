@@ -10,7 +10,8 @@ add_executable(SI_Proiect
         src/algorithms/RC6/RC6.h
         src/algorithms/RSA/RSA.c
         src/algorithms/RSA/RSA.h
-        src/main.c)
+        src/main.c
+        src/tests/RC6/test_cases.c)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GMP REQUIRED IMPORTED_TARGET gmp)

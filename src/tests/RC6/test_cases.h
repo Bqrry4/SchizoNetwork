@@ -5,4 +5,6 @@
 #ifndef SI_PROIECT_TEST_CASES_H
 #define SI_PROIECT_TEST_CASES_H
 
+void execute_tests();
+
 #endif //SI_PROIECT_TEST_CASES_H

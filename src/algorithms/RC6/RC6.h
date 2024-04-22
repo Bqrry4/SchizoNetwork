@@ -25,8 +25,8 @@ void insert_word(byte_array array, int index, word le_word);
 
 int max(int a, int b);
 
-word RSR(word a, word b);
+static inline word RSR(word a, word b);
 
-word RSL(word a, word b);
+static inline word RSL(word a, word b);
 
 #endif //SI_PROIECT_RC6_H

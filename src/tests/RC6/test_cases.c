@@ -8,27 +8,65 @@
 #include "RC6.h"
 
 void test_case_1() {
-    char original_plaintext[] = "1234567890";
-    char key_string[] = "abcdefghij";
+//    char original_plaintext[] = "1234567812345678";
+    char plaintext_string[] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"; //and key
+//    char key_string[] = "123456789abcdef";
 
-    byte_array plaintext = get_byte_array(original_plaintext);
-    byte_array key = get_byte_array(key_string);
+    byte_array plaintext = {
+            .data = malloc(16 * sizeof(byte)),
+            .length = 16
+    };
+    memcpy(plaintext.data, plaintext_string, plaintext.length);
 
-    byte_array cyphertext = {
+    byte_array key = {
+            .data = malloc(16 * sizeof(byte)),
+            .length = 16
+    };
+    memcpy(key.data, plaintext_string, key.length);
+
+    u_int16_t ciphertext_length = get_encrypted_block_length(plaintext.length);
+
+    byte_array ciphertext = {
+            .data = malloc(ciphertext_length * sizeof(byte)),
+            .length = ciphertext_length
+    };
+
+    byte_array deciphertext = {
             .data = malloc(plaintext.length * sizeof(byte)),
             .length = plaintext.length
     };
 
-    byte_array decyphertext = {
-            .data = malloc(plaintext.length * sizeof(byte)),
-            .length = plaintext.length
-    };
+    printf("Test1:\n");
+//    printf("\tOriginal text: %s\n", original_plaintext);
 
-    encrypt(plaintext, key, cyphertext);
+    encrypt(plaintext, key, ciphertext);
 
-    decrypt(cyphertext, key, decyphertext);
+    printf("\tEncrypted text (hex) (length: %d): ", ciphertext.length);
 
-    char* decyphertext_string = decyphertext.data;
+    for (int i = 0; i < ciphertext.length; ++i) {
+        printf("%x ", ciphertext.data[i]);
+    }
+    printf("\n");
 
-    printf("Original text: %s\nDecrypted text: %s", original_plaintext, decyphertext_string);
+    decrypt(ciphertext, key, deciphertext);
+
+//    char *decyphertext_string = deciphertext.data;
+
+    //printf("\tDecrypted text: %s\n", decyphertext_string);
+    printf("\tDecrypted hex: ");
+
+
+    for (int i = 0; i < deciphertext.length; ++i) {
+        printf("%x", deciphertext.data[i]);
+    }
+    printf("\n");
+
+    free(plaintext.data);
+    free(key.data);
+    free(ciphertext.data);
+    free(deciphertext.data);
+}
+
+void execute_tests() {
+    test_case_1();
 }
