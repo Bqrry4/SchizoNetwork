@@ -22,8 +22,8 @@ void encrypt(byte_array plaintext, byte_array key, byte_array ciphertext) {
         B = B + S[0];
         D = D + S[1];
         for (int r = 1; r <= R; r++) {
-            word t = RSL(B * (2 * B + 1), LOGW);
-            word u = RSL(D * (2 * D + 1), LOGW);
+            word t = RSL(B * (2 * B + 1), LOG_W);
+            word u = RSL(D * (2 * D + 1), LOG_W);
             A = RSL(A ^ t, u) + S[2 * r];
             C = RSL(C ^ u, t) + S[2 * r + 1];
             t = A;
@@ -63,10 +63,10 @@ void decrypt(byte_array ciphertext, byte_array key, byte_array plaintext) {
             C = B;
             B = A;
             A = t;
-            word u = RSL(D * ((D << 1) + 1), LOGW);
-            t = RSL(B * ((B << 1) + 1), LOGW);
+            word u = RSL(D * ((D << 1) + 1), LOG_W);
+            t = RSL(B * ((B << 1) + 1), LOG_W);
             C = RSR(C - S[2 * r + 1], t) ^ u;
-            A = RSL(A - S[2 * r], u) ^ t;
+            A = RSR(A - S[2 * r], u) ^ t;
         }
         D = D - S[1];
         B = B - S[0];
@@ -80,9 +80,9 @@ void decrypt(byte_array ciphertext, byte_array key, byte_array plaintext) {
 
 word get_little_endian_word(byte_array array, int index) {
     word first_byte = index < array.length ? array.data[index] : 0;
-    word second_byte = index + 1 < array.length ? (array.data[index + 1] << 8) : 0;
-    word third_byte = index + 2 < array.length ? (array.data[index + 2] << 16) : 0;
-    word fourth_byte = index + 3 < array.length ? (array.data[index + 3] << 24) : 0;
+    word second_byte = (index + 1) < array.length ? (array.data[index + 1] << 8) : 0;
+    word third_byte = (index + 2) < array.length ? (array.data[index + 2] << 16) : 0;
+    word fourth_byte = (index + 3) < array.length ? (array.data[index + 3] << 24) : 0;
     return first_byte | second_byte | third_byte | fourth_byte;
 }
 
@@ -107,7 +107,7 @@ void insert_word(byte_array array, int index, word le_word) {
 
 void key_schedule(byte_array key, word *S) {
     //Load key bytes into words
-    u_int16_t c = key.length / 4 + key.length % 4 != 0 ? 1 : 0;
+    u_int16_t c = (key.length / 4) + ((key.length % 4) != 0 ? 1 : 0);
     c = max(1, c);
 
     word *L = malloc(sizeof(word) * c);
@@ -123,7 +123,7 @@ void key_schedule(byte_array key, word *S) {
 
     word A = 0, B = 0;
     int i = 0, j = 0;
-    int v = 3 * max(c, 2 * R + 4);
+    int v = 3 * (max(c, 2 * R + 4));
     for (int s = 1; s <= v; s++) {
         A = S[i] = RSL(S[i] + A + B, 3);
         B = L[j] = RSL(L[j] + A + B, (A + B));

@@ -8,7 +8,7 @@
 #include "../../commons/data_types.h"
 
 #define W 32
-#define LOGW 5
+#define LOG_W 5
 #define R 20
 #define P 0xB7E15163
 #define Q 0x9E3779B9
