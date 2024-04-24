@@ -5,9 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "algorithms/RSA/RSA.h"
+#include "tests/RC6/test_cases.h"
+#include "RC6.h"
 
 int main() {
-
     RSA_init();
 
     rsa_keys key;
