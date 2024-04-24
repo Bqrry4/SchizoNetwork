@@ -3,7 +3,10 @@
 //
 
 //Note: test functions were written with big numbers in mind, so they are local, don't reuse them
+#include <string.h>
+#include <stdio.h>
 #include <gmp.h>
+#include <time.h>
 #include "../../commons/data_types.h"
 
 #include "RSA.h"
@@ -61,40 +64,43 @@ static bool primality_test(mpz_t possible_prime) {
            miller_rabin_test(possible_prime, 24);
 }
 
+static gmp_randstate_t rstate;
+void RSA_init()
+{
+    //using Mersenne Twister algorithm
+    gmp_randinit_mt(rstate);
+    gmp_randseed_ui(rstate, time(NULL));
+}
+
+void RSA_clear()
+{
+    gmp_randclear(rstate);
+}
+
 ///@brief Generate a prime number in the (2^(n - 1); 2^n - 1) interval
 ///@param[out] prime
 ///@param[in] n
 static void gen_prime(mpz_t prime, int n) {
 
-    mpz_t min, rand;
-    mpz_init2(min, n);
+    mpz_t rand;
     mpz_init2(rand, n);
 
-    //bitwise lshift, init min bound as 2^(n-1) or set the MSB to 1
-    mpz_set_ui(min, 1);
-    mpz_mul_2exp(min, min, n - 1);
+    mpz_rrandomb(rand, rstate, n);
 
-    //using Mersenne Twister algorithm
-    gmp_randstate_t rstate;
-    gmp_randinit_mt(rstate);
-    gmp_randseed_ui(rstate, 3);
-
-    do {
-        //Generate values for bits other than MSB
-        mpz_urandomb(rand, rstate, n - 1); //mpz_rrandomb??
-        //Construct the number
-        mpz_add(rand, min, rand);
-        //Make it odd, as all primes >2 are odd
-        if (mpz_even_p(rand)) {
-            mpz_sub_ui(rand, rand, 1);
-        }
+    //Make it odd, as all primes >2 are odd
+    if (mpz_even_p(rand)) {
+        mpz_add_ui(rand, rand, 1);
     }
+
     //while (primality_test(rand));
-    while (!mpz_probab_prime_p(rand, 24));
+    while (mpz_probab_prime_p(rand, 24) == 0)
+    {
+        mpz_add_ui(rand, rand, 2);
+    }
+
     mpz_set(prime, rand);
 
-    gmp_randclear(rstate);
-    mpz_clears(min, rand, NULL);
+    mpz_clears(rand, NULL);
 }
 
 ///@brief Compute the a*x = 1 mod m
@@ -131,7 +137,7 @@ static void inverse_modular(mpz_t x, mpz_t a, mpz_t m)
         mpz_set(s0, t);
     }
 
-    if (mpz_cmp_ui(r1, 0) < 0)
+    if (mpz_cmp_ui(s0, 0) < 0)
         mpz_mod(s0, s0, m);
 
     mpz_set(x, s0);
@@ -139,15 +145,55 @@ static void inverse_modular(mpz_t x, mpz_t a, mpz_t m)
     mpz_clears(r0, r1, s0, s1, q, t, NULL);
 }
 
-void key_generation(rsa_keys *key) {
+///@brief Compute x = (b ^ e) % mod
+///@param[out] x
+///@param[in] b base
+///@param[in] e exponent
+///@param[in] mod modulus
+static void modular_exp(mpz_t x, mpz_t b, mpz_t e, mpz_t mod)
+{
+    if(!mpz_cmp_ui(mod, 1))
+    {
+        mpz_set_ui(x, 0);
+        return;
+    }
+
+    mpz_t base, exp;
+    mpz_init_set(base, b);
+    mpz_init_set(exp, e);
+
+    mpz_set_ui(x, 1);
+    mpz_mod(base, base, mod);
+
+    while (mpz_cmp_ui(exp, 0) > 0)
+    {
+        if(mpz_odd_p(exp))
+        {
+            mpz_mul(x, x, base);
+            mpz_mod(x, x, mod);
+        }
+
+        mpz_tdiv_q_2exp(exp, exp, 1);
+        mpz_mul(base, base, base);
+        mpz_mod(base, base, mod);
+    }
+
+    mpz_clears(base, exp, NULL);
+}
+
+void RSA_key_generation(rsa_keys *key, int n) {
     mpz_t p, q, lambda;
 
-    mpz_init2(p, 1024);
-    mpz_init2(q, 1024);
-    mpz_init2(lambda, 1024);
+    mpz_init2(p, n);
+    mpz_init2(q, n);
+    mpz_init2(lambda, n);
 
-    gen_prime(p, 1024);
-    gen_prime(q, 1024);
+    gen_prime(p, n);
+    gen_prime(q, n);
+
+
+    //mpz_set_str(p, "170141183460469231731687303715884105727", 10);
+    //mpz_set_str(q, "3754733257489862401973357979128773", 10);
 
     mpz_mul(key->n, p, q);
     //Using the lambda version
@@ -157,18 +203,37 @@ void key_generation(rsa_keys *key) {
     mpz_lcm(lambda, p, q);
 
     //choosing the e
-    mpz_set_ui(key->e, 65537);
-
+    mpz_set_ui(key->e,  65537);
     //finding the d
     inverse_modular(key->d, key->e, lambda);
-
     mpz_clears(p, q, lambda, NULL);
 }
 
-void encrypt_RSA() {
+void RSA_encrypt(byte_array plaintext, rsa_pub_key key, byte_array* ciphertext) {
 
+    mpz_t plain, enc;
+    mpz_init2(plain, 1024);
+    mpz_init2(enc, 1024);
+
+    mpz_import (plain, plaintext.length, 1, sizeof(plaintext.data[0]), 0, 0, plaintext.data);
+
+    modular_exp(enc, plain, key.e, key.n);
+
+    mpz_export((*ciphertext).data, &(ciphertext->length), 1, sizeof((*ciphertext).data[0]), 0, 0, enc);
+
+    mpz_clears(plain, enc, NULL);
 }
 
-void decrypt_RSA() {
+void RSA_decrypt(byte_array ciphertext, rsa_prv_key key, byte_array *plaintext) {
 
+    mpz_t cipher, dec;
+    mpz_init2(cipher, 1024);
+    mpz_init2(dec, 1024);
+    mpz_import (cipher, ciphertext.length, 1, sizeof(ciphertext.data[0]), 0, 0, ciphertext.data);
+
+    modular_exp(dec, cipher, key.d, key.n);
+
+    mpz_export(plaintext->data, &(plaintext->length), 1, sizeof(plaintext->data[0]), 0, 0, dec);
+
+    mpz_clears(cipher, dec, NULL);
 }
