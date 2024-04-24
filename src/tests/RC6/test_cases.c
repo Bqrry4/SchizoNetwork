@@ -41,7 +41,7 @@ void test_case_1() {
     }
     printf("\n");
 
-    encrypt(plaintext, key, ciphertext);
+    RC6_encrypt(plaintext, key, ciphertext);
 
     printf("\tEncrypted hex: ");
     for (int i = 0; i < ciphertext.length; ++i) {
@@ -49,7 +49,7 @@ void test_case_1() {
     }
     printf("\n");
 
-    decrypt(ciphertext, key, deciphertext);
+    RC6_decrypt(ciphertext, key, deciphertext);
 
     printf("\tDecrypted hex: ");
     for (int i = 0; i < deciphertext.length; ++i) {
@@ -99,7 +99,7 @@ void test_case_2() {
     }
     printf("\n");
 
-    encrypt(plaintext, key, ciphertext);
+    RC6_encrypt(plaintext, key, ciphertext);
 
     printf("\tEncrypted hex: ");
     for (int i = 0; i < ciphertext.length; ++i) {
@@ -107,7 +107,7 @@ void test_case_2() {
     }
     printf("\n");
 
-    decrypt(ciphertext, key, deciphertext);
+    RC6_decrypt(ciphertext, key, deciphertext);
 
     printf("\tDecrypted hex: ");
     for (int i = 0; i < deciphertext.length; ++i) {
