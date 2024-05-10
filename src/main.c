@@ -4,11 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "algorithms/RSA/RSA.h"
-#include "tests/RC6/test_cases.h"
-#include "RC6.h"
+#include "communication/server/server.h"
+#include "communication/client/client.h"
+#include "communication/communication_commons.h"
+#include "communication/handshake/handshake.h"
 
 int main() {
+
     RSA_init();
 
     rsa_keys key;
@@ -16,29 +20,8 @@ int main() {
     mpz_init2(key.n, 2048);
     mpz_init2(key.d, 2048);
 
-    RSA_key_generation(&key, 1024);
-
-    mpz_out_str(stdout, 16, key.e);
-    printf("\n");
-    mpz_out_str(stdout, 16, key.n);
-    printf("\n");
-    mpz_out_str(stdout, 16, key.d);
-    printf("\n");
-
-    byte_array a;
-    byte_array b, e;
-
-    a.data = malloc( 4096 *sizeof(char));
-    char ch[] = "I understand that it's an antipattern, but it's convenient.";
-
-    memcpy(a.data, ch, sizeof(ch)/sizeof(char));
-    a.length = sizeof(ch)/sizeof(char);
-
-    b.data = malloc(4096 * sizeof(char));
-    b.length = 4096;
-
-    e.data = malloc(4096 * sizeof(char));
-    e.length = 3;
+    //key of 2048 bits
+    RSA_key_generation(&key, 2048);
 
     rsa_pub_key pub_key;
     pub_key.n = key.n;
@@ -48,30 +31,51 @@ int main() {
     prv_key.d = key.d;
     prv_key.n = key.n;
 
-
-    RSA_encrypt(a,pub_key, &b);
-    printf("\nEncrypted: ");
-    for(int i = 0; i < b.length; ++i)
-    {
-        printf("%x", b.data[i]);
-    }
+    mpz_out_str(stdout, 16, pub_key.n);
+    printf("\n");
+    mpz_out_str(stdout, 16, pub_key.e);
     printf("\n");
 
-    RSA_decrypt(b, prv_key, &e);
-    printf("Decrypted: %s \nHex: ", e.data);
+    pid_t pid = fork();
+    if (pid == 0) {//child will listen for connection requests
+        int listener_socket = listen_for_connections(onRead);
 
-    for(int i = 0; i < e.length; ++i)
-    {
-        printf("%x", e.data[i]);
+
+        byte_array sym_key;
+
+        if(accept_handshake(listener_socket, key, &sym_key))
+        {
+            perror("Failed to init handshake");
+        }
+
+        close_socket(listener_socket);
+
+
+    } else {//parent will connect
+
+        //@TODO Here will be the CLI
+
+
+
+        //@FIXME cuz of the "loopback"
+        sleep(5);
+        byte_array sym_key;
+
+
+        int connection_socket = connect_to("127.0.0.1", PORT);
+        if(init_handshake(connection_socket, key, &sym_key))
+        {
+            perror("Failed to init handshake");
+        }
+
+
+        close_socket(connection_socket);
+
     }
-    printf("\n");
 
-    free(a.data);
-    free(b.data);
-    free(e.data);
-
-    mpz_clears(key.e, key.n, key.d,  NULL);
-
+    //free key
+    mpz_clears(key.e, key.n, key.d, NULL);
+    //clear RSA state
     RSA_clear();
     return 0;
 }

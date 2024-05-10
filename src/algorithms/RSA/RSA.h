@@ -26,7 +26,7 @@ void RSA_clear();
 
 /// @brief Generates RSA keys
 /// @param[out] rsa_keys
-/// @param[in] n size of the prime numbers, key-size/2
+/// @param[in] n size of the key
 void RSA_key_generation(rsa_keys *key, int n);
 
 void RSA_encrypt(byte_array plaintext, rsa_pub_key key, byte_array *ciphertext);

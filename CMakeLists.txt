@@ -11,7 +11,14 @@ add_executable(SI_Proiect
         src/algorithms/RSA/RSA.c
         src/algorithms/RSA/RSA.h
         src/main.c
-        src/tests/RC6/test_cases.c)
+        src/communication/client/client.c
+        src/communication/client/client.h
+        src/communication/server/server.c
+        src/communication/server/server.h
+        src/communication/communication_commons.h
+        src/communication/handshake/handshake.c
+        src/communication/handshake/handshake.h
+        src/communication/communication_commons.c)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GMP REQUIRED IMPORTED_TARGET gmp)

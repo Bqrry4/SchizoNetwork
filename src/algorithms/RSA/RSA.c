@@ -184,12 +184,13 @@ static void modular_exp(mpz_t x, mpz_t b, mpz_t e, mpz_t mod)
 void RSA_key_generation(rsa_keys *key, int n) {
     mpz_t p, q, lambda;
 
-    mpz_init2(p, n);
-    mpz_init2(q, n);
-    mpz_init2(lambda, n);
+    int prime_n = n >> 1;
+    mpz_init2(p, prime_n);
+    mpz_init2(q, prime_n);
+    mpz_init2(lambda, prime_n);
 
-    gen_prime(p, n);
-    gen_prime(q, n);
+    gen_prime(p, prime_n);
+    gen_prime(q, prime_n);
 
 
     //mpz_set_str(p, "170141183460469231731687303715884105727", 10);
@@ -212,8 +213,8 @@ void RSA_key_generation(rsa_keys *key, int n) {
 void RSA_encrypt(byte_array plaintext, rsa_pub_key key, byte_array* ciphertext) {
 
     mpz_t plain, enc;
-    mpz_init2(plain, 1024);
-    mpz_init2(enc, 1024);
+    mpz_init(plain);
+    mpz_init(enc);
 
     mpz_import (plain, plaintext.length, 1, sizeof(plaintext.data[0]), 0, 0, plaintext.data);
 
@@ -227,8 +228,8 @@ void RSA_encrypt(byte_array plaintext, rsa_pub_key key, byte_array* ciphertext) 
 void RSA_decrypt(byte_array ciphertext, rsa_prv_key key, byte_array *plaintext) {
 
     mpz_t cipher, dec;
-    mpz_init2(cipher, 1024);
-    mpz_init2(dec, 1024);
+    mpz_init(cipher);
+    mpz_init(dec);
     mpz_import (cipher, ciphertext.length, 1, sizeof(ciphertext.data[0]), 0, 0, ciphertext.data);
 
     modular_exp(dec, cipher, key.d, key.n);

@@ -11,9 +11,13 @@
 
 typedef u_int8_t byte;
 
+/** @struct byte_array
+ *  @var data pointer to an array of bytes
+ *  @var length of the populated part of the array, not the real size
+ */
 typedef struct {
     byte* data;
-    u_int16_t length;
+    size_t length;
 } byte_array;
 
 typedef u_int32_t word;
