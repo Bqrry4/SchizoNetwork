@@ -4,13 +4,15 @@
 
 #include "server.h"
 #include "../communication_commons.h"
+#include "RC6.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <linux/limits.h>
 
-int listen_for_connections(void (*onRead)(int, byte_array)) {
+int listen_for_connections() {
     int listen_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (listen_socket < 0) {
         perror("Failed to create listen_socket");
@@ -63,12 +65,90 @@ int listen_for_connections(void (*onRead)(int, byte_array)) {
     free(network_buffer.data);
     close(sock_recv);
     close(listen_socket);
-
     return 0;
 }
 
+///@return -1 on error, 1 when buffer overrun
+int list_work_dir(byte_array *buffer) {
+    int err = 0;
 
-void onRead(int socket_fd, byte_array data) {
-    printf("%s\n", data.data);
+    FILE *fp;
+    char path[PATH_MAX];
 
+    fp = popen("ls -p | grep -v /", "r");
+    if (fp == NULL) {
+        err = -1;
+        goto finally;
+    }
+
+    size_t ls_len = 0;
+    while (fgets(path, PATH_MAX, fp) != NULL) {
+        size_t slen = strlen(path);
+        if (ls_len + slen >= buffer->length) {
+            printf("Not enough buffer");
+            err = 1;
+            break;
+        }
+        memcpy(buffer->data + ls_len, path, slen);
+
+        ls_len += slen;
+    }
+
+    buffer->length = ls_len;
+
+    finally:
+    pclose(fp);
+    return err;
+}
+
+int listen_for_requests(socket_wb socket, byte_array sym) {
+
+    int err = 0;
+    ssize_t bytes;
+    byte_array rc6_output = {
+            .data = malloc(4096),
+            .length = 4096
+    };
+
+    while (true) {
+        if ((bytes = recv(socket.socket_fd, socket.recv_buffer.data, DATAGRAM_SIZE - 1, 0)) < 1) {
+            printf("Failed to receive data");
+            err = -1;
+            goto finally;
+        }
+        socket.recv_buffer.length = bytes;
+
+        RC6_decrypt(socket.recv_buffer, sym, rc6_output);
+
+        switch (rc6_output.data[0]) {
+            case 100:
+                socket.send_buffer.data[0] = 100;
+
+                byte_array ls_dir = {
+                        .data = socket.send_buffer.data + 3,
+                        4093
+                };
+
+                if (list_work_dir(&ls_dir)) {
+                    goto finally;
+                }
+
+                socket.send_buffer.data[1] = ls_dir.length >> 8;
+                socket.send_buffer.data[2] = ls_dir.length;
+
+                socket.send_buffer.length = ls_dir.length + 3;
+
+                RC6_encrypt(socket.send_buffer, sym, rc6_output);
+                send(socket.socket_fd, rc6_output.data, get_encrypted_block_length(socket.send_buffer.length), 0);
+                break;
+            case 101:
+
+
+                break;
+        }
+    }
+
+    finally:
+    free(rc6_output.data);
+    return err;
 }

@@ -6,15 +6,16 @@
 #define SI_PROIECT_HANDSHAKE_H
 
 #include "../../algorithms/RSA/RSA.h"
+#include "../communication_commons.h"
 
 ///@brief Initialize handshake
 ///@param[in] socket
 ///@param[in] key The RSA key to perform exchange
 ///@param[out] sym_key the bytearray_data should be freed
-int init_handshake(int socket_fd, rsa_keys key, byte_array* sym_key);
+int init_handshake(socket_wb socket, rsa_keys key, byte_array* sym_key);
 ///@brief Accept handshake
 ///@param[in] socket
 ///@param[in] key The RSA key to perform exchange
 ///@param[out] sym_key the bytearray_data should be freed
-int accept_handshake(int socket_fd, rsa_keys key, byte_array* sym_key);
+int accept_handshake(socket_wb socket, rsa_keys key, byte_array* sym_key);
 #endif //SI_PROIECT_HANDSHAKE_H

@@ -38,16 +38,32 @@ int main() {
 
     pid_t pid = fork();
     if (pid == 0) {//child will listen for connection requests
-        int listener_socket = listen_for_connections(onRead);
+        int listener_socket = listen_for_connections();
 
+        byte_array send_buffer, recv_buffer;
+        send_buffer.data = calloc(DATAGRAM_SIZE, 1);
+        recv_buffer.data = calloc(DATAGRAM_SIZE, 1);
 
-        byte_array sym_key;
+        socket_wb socketWb = {
+                .socket_fd = listener_socket,
+                .recv_buffer = recv_buffer,
+                .send_buffer = send_buffer
+        };
 
-        if(accept_handshake(listener_socket, key, &sym_key))
+        byte_array sym_key = {
+                .data = malloc(4096)
+        };
+
+        if(accept_handshake(socketWb, key, &sym_key))
         {
             perror("Failed to init handshake");
         }
 
+        listen_for_requests(socketWb, sym_key);
+
+        free(recv_buffer.data);
+        free(send_buffer.data);
+        free(sym_key.data);
         close_socket(listener_socket);
 
 
@@ -56,19 +72,44 @@ int main() {
         //@TODO Here will be the CLI
 
 
-
         //@FIXME cuz of the "loopback"
         sleep(5);
-        byte_array sym_key;
 
+        byte_array sym_key = {
+                .data = malloc(4096)
+        };
 
         int connection_socket = connect_to("127.0.0.1", PORT);
-        if(init_handshake(connection_socket, key, &sym_key))
+
+        byte_array send_buffer, recv_buffer;
+        send_buffer.data = calloc(DATAGRAM_SIZE, 1);
+        recv_buffer.data = calloc(DATAGRAM_SIZE, 1);
+
+        socket_wb socketWb = {
+                .socket_fd = connection_socket,
+                .recv_buffer = recv_buffer,
+                .send_buffer = send_buffer
+        };
+
+
+        if(init_handshake(socketWb, key, &sym_key))
         {
             perror("Failed to init handshake");
         }
 
+        //request
+        byte_array ls_buffer = {
+                .data = calloc(DATAGRAM_SIZE, 1),
+                .length = 4096
+        };
 
+        list_folder_request(socketWb, sym_key, &ls_buffer);
+
+        printf("\n%s", ls_buffer.data);
+
+        free(recv_buffer.data);
+        free(send_buffer.data);
+        free(sym_key.data);
         close_socket(connection_socket);
 
     }

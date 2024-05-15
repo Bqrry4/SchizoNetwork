@@ -18,7 +18,8 @@ add_executable(SI_Proiect
         src/communication/communication_commons.h
         src/communication/handshake/handshake.c
         src/communication/handshake/handshake.h
-        src/communication/communication_commons.c)
+        src/communication/communication_commons.c
+        src/commons/app_defines.h)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GMP REQUIRED IMPORTED_TARGET gmp)
