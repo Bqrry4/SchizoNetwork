@@ -10,6 +10,7 @@
 #include "communication/client/client.h"
 #include "communication/communication_commons.h"
 #include "communication/handshake/handshake.h"
+#include "cli/cli.h"
 
 int main() {
 
@@ -55,7 +56,7 @@ int main() {
 
         //@TODO Here will be the CLI
 
-
+        init_cli();
 
         //@FIXME cuz of the "loopback"
         sleep(5);
