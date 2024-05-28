@@ -68,11 +68,11 @@ int init_handshake(socket_wb socket, rsa_keys key, byte_array *sym_key) {
     };
 
 
-    mpz_out_str(stdout,16, serv_pub_n);
-    printf("\n");
+//    mpz_out_str(stdout,16, serv_pub_n);
+//    printf("\n");
 
-    mpz_out_str(stdout,16, serv_pub_e);
-    printf("\n");
+//    mpz_out_str(stdout,16, serv_pub_e);
+//    printf("\n");
 
     //Send public key + encoded number Client Finish
     socket.send_buffer.data[0] = 20;
@@ -137,15 +137,15 @@ int init_handshake(socket_wb socket, rsa_keys key, byte_array *sym_key) {
 
     mpz_import (serv_rand, number_as_bytes.length, 1, sizeof(number_as_bytes.data[0]), 0, 0, number_as_bytes.data);
 
-    printf("\nGenerated Client:");
-    mpz_out_str(stdout, 16, rand);
-    printf("\nReceived Client:");
-    mpz_out_str(stdout, 16, serv_rand);
+//    printf("\nGenerated Client:");
+//    mpz_out_str(stdout, 16, rand);
+//    printf("\nReceived Client:");
+//    mpz_out_str(stdout, 16, serv_rand);
 
     mpz_add(rand, rand, serv_rand);
 
-    printf("\nKey:");
-    mpz_out_str(stdout, 10, rand);
+//    printf("\nKey:");
+//    mpz_out_str(stdout, 10, rand);
 
     mpz_export(sym_key->data, &(sym_key->length), 1, sizeof(sym_key->data[0]), 0, 0, rand);
 
@@ -230,11 +230,11 @@ int accept_handshake(socket_wb socket, rsa_keys key, byte_array *sym_key) {
             .e = clnt_pub_e
     };
 
-    mpz_out_str(stdout,16, clnt_pub_n);
-    printf("\n");
-
-    mpz_out_str(stdout,16, clnt_pub_e);
-    printf("\n");
+//    mpz_out_str(stdout,16, clnt_pub_n);
+//    printf("\n");
+//
+//    mpz_out_str(stdout,16, clnt_pub_e);
+//    printf("\n");
 
     offset += len + 2;
     len = (socket.recv_buffer.data[offset] << 8) + socket.recv_buffer.data[offset + 1];
@@ -275,8 +275,8 @@ int accept_handshake(socket_wb socket, rsa_keys key, byte_array *sym_key) {
 
     mpz_add(rand, rand, clnt_rand);
 
-    printf("\nKey:");
-    mpz_out_str(stdout, 10, rand);
+//    printf("\nKey:");
+//    mpz_out_str(stdout, 10, rand);
 
 
     mpz_export(sym_key->data, &(sym_key->length), 1, sizeof(sym_key->data[0]), 0, 0, rand);
