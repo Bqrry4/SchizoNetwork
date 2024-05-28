@@ -65,7 +65,7 @@ int select_option(int number_of_options, char **options) {
         fgets(read_buffer, 32, stdin);
         selected_option = strtol(read_buffer, NULL, 10);
 
-        if (selected_option <= 0 || selected_option >= number_of_options) {
+        if (selected_option <= 0 || selected_option > number_of_options) {
             puts("you fool. you absolute baffoon. You think you can challenge me in my own realm? you think you can rebel against my authority? you dare come into my house and upturn my dining chairs and spill coffee grounds in my Keurig? you thought you were safe in your chain mail armor behind that screen of yours. I will take these laminate wood floor boards and destroy you. i didnt want war. but i didnt start it ");
         } else break;
     }
@@ -73,7 +73,7 @@ int select_option(int number_of_options, char **options) {
     return (int) selected_option - 1;
 }
 
-void scan() {
+void scan_network(char *out_address) {
     char nmap_temp_buffer[4096], final_buffer[4096];
 
     while (true) {
@@ -97,7 +97,9 @@ void scan() {
 
     split_options(final_buffer, options);
 
-    select_option(line_count, options);
+    int opt = select_option(line_count, options);
+
+    strcpy(out_address, options[opt]);
 
     free(options);
 }
@@ -134,14 +136,6 @@ void init_cli() {
     }
     printf("Press ENTER to scan local network for other schizo prophets...\n");
     getchar();
-
-    //scan();
-    for (int i = 0; i <= 100; i++) {
-        print_progress(i,100);
-        for (int j = 0; j < 150; j++) {
-            nanosleep(&_100ms_interval, NULL);
-        }
-    }
 }
 
 

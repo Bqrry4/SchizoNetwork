@@ -164,7 +164,7 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
                 ulong size = ftell(fp);
                 fclose(fp);
 
-                printf("\nOCTETS %d", size);
+                //printf("\nOCTETS %d", size);
 
                 ulong blocks_num = size / (DATAGRAM_SIZE - 10); // 1 byte for header
                 blocks_num += ((size % (DATAGRAM_SIZE - 10)) != 0 ) ? 1 : 0;
