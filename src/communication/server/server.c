@@ -154,8 +154,8 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
 
                 printf("\nOCTETS %d", size);
 
-                ulong blocks_num = size / (DATAGRAM_SIZE - 20); // 1 byte for header
-                blocks_num += ((size % (DATAGRAM_SIZE - 20)) != 0 ) ? 1 : 0;
+                ulong blocks_num = size / (DATAGRAM_SIZE - 10); // 1 byte for header
+                blocks_num += ((size % (DATAGRAM_SIZE - 10)) != 0 ) ? 1 : 0;
                 //return the number of blocks
 
                 socket.send_buffer.data[0] = 101;
@@ -176,11 +176,13 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
                 //parse the block id
                 int blockID = (rc6_output.data[file_name_len + 3] << 24) + (rc6_output.data[file_name_len + 4] << 16) + (rc6_output.data[file_name_len + 5] << 8) + rc6_output.data[file_name_len + 6];
 
+                memset(socket.send_buffer.data, 0, DATAGRAM_SIZE);
+
                 socket.send_buffer.data[0] = BLOCK_REQUEST;
 
                 fp = fopen(filename, "r");
-                fseek(fp, blockID * (DATAGRAM_SIZE - 20), SEEK_SET);
-                size = fread(socket.send_buffer.data + 1, sizeof(byte), DATAGRAM_SIZE - 20, fp);
+                fseek(fp, blockID * (DATAGRAM_SIZE - 10), SEEK_SET);
+                size = fread(socket.send_buffer.data + 3, sizeof(byte), DATAGRAM_SIZE - 10, fp);
                 fclose(fp);
 
                 //printf("\nBlock id: %d, ns %d", blockID, size);

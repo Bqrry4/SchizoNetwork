@@ -154,6 +154,7 @@ int request_block(socket_wb socket, byte_array sym, char* file_name, int blockID
 
     send(socket.socket_fd, rc6_output.data,get_encrypted_block_length(socket.send_buffer.length), 0);
 
+    memset(socket.recv_buffer.data, 0, DATAGRAM_SIZE);
     ssize_t bytes;
     if ((bytes = recv(socket.socket_fd, socket.recv_buffer.data, DATAGRAM_SIZE, 0)) < 1) {
         printf("Failed to receive data Client");
@@ -173,7 +174,7 @@ int request_block(socket_wb socket, byte_array sym, char* file_name, int blockID
 
     block_buffer->length = (rc6_output.data[1] << 8) + rc6_output.data[2];
 
-    memcpy(block_buffer->data, rc6_output.data + 1, block_buffer->length);
+    memcpy(block_buffer->data, rc6_output.data + 3, block_buffer->length);
 
     //printf("\nBlock buffer : %d", block_buffer->length);
 

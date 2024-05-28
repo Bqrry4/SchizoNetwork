@@ -127,7 +127,7 @@ int main() {
             //request block
             request_block(socketWb, sym_key, filename, i,  &block_buffer);
             //move pointer
-            fseek(fp, i*(DATAGRAM_SIZE - 20) , SEEK_SET);
+            fseek(fp, i*(DATAGRAM_SIZE - 10) , SEEK_SET);
             //write
             fwrite(block_buffer.data, sizeof(byte), block_buffer.length, fp);
         }
