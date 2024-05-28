@@ -37,7 +37,7 @@ int main() {
     printf("\n");
 
     pid_t pid = fork();
-    if (pid == 0) {//child will listen for connection requests
+    if (pid != 0) {//child will listen for connection requests
 
         chdir("./folder1");
 
@@ -112,7 +112,7 @@ int main() {
 
         printf("\n%s", ls_buffer.data);
 
-        char* filename = "VIPASSI-Sunyata-MP3.zip";
+        char* filename = "poto.png";
         //Request the file
         int blocks_num = request_file(socketWb, sym_key, filename);
         printf("\n Blocks %d \n", blocks_num);
@@ -127,7 +127,7 @@ int main() {
             //request block
             request_block(socketWb, sym_key, filename, i,  &block_buffer);
             //move pointer
-            fseek(fp, i*DATAGRAM_SIZE , SEEK_SET);
+            fseek(fp, i*(DATAGRAM_SIZE - 20) , SEEK_SET);
             //write
             fwrite(block_buffer.data, sizeof(byte), block_buffer.length, fp);
         }

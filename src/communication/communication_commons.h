@@ -7,7 +7,7 @@
 
 #include "../commons/data_types.h"
 
-#define PORT 35544
+#define PORT 35543
 ///@brief The maximum size of a tcp packet
 #define DATAGRAM_SIZE 4096
 

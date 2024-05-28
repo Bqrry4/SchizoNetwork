@@ -111,7 +111,7 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
     };
 
     while (true) {
-        if ((bytes = recv(socket.socket_fd, socket.recv_buffer.data, DATAGRAM_SIZE - 1, 0)) < 1) {
+        if ((bytes = recv(socket.socket_fd, socket.recv_buffer.data, DATAGRAM_SIZE, 0)) < 1) {
             printf("Failed to receive data");
             err = -1;
             goto finally;
@@ -152,8 +152,10 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
                 ulong size = ftell(fp);
                 fclose(fp);
 
-                ulong blocks_num = size / (DATAGRAM_SIZE - 1); // 1 byte for header
-                blocks_num += (size % (DATAGRAM_SIZE - 1)) != 0 ? 1 : 0;
+                printf("\nOCTETS %d", size);
+
+                ulong blocks_num = size / (DATAGRAM_SIZE - 20); // 1 byte for header
+                blocks_num += ((size % (DATAGRAM_SIZE - 20)) != 0 ) ? 1 : 0;
                 //return the number of blocks
 
                 socket.send_buffer.data[0] = 101;
@@ -172,18 +174,21 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
                 filename = malloc(file_name_len);
                 memcpy(filename, rc6_output.data + 3, file_name_len);
                 //parse the block id
-                int blockID = (rc6_output.data[file_name_len + 3] << 24) + (rc6_output.data[file_name_len + 4] << 16) + (rc6_output.data[file_name_len + 5] << 8) + rc6_output.data[6];
+                int blockID = (rc6_output.data[file_name_len + 3] << 24) + (rc6_output.data[file_name_len + 4] << 16) + (rc6_output.data[file_name_len + 5] << 8) + rc6_output.data[file_name_len + 6];
 
                 socket.send_buffer.data[0] = BLOCK_REQUEST;
 
                 fp = fopen(filename, "r");
-                fseek(fp, blockID * (DATAGRAM_SIZE - 1), SEEK_SET);
-                size = fread(socket.send_buffer.data + 1, sizeof(byte), DATAGRAM_SIZE - 1, fp);
+                fseek(fp, blockID * (DATAGRAM_SIZE - 20), SEEK_SET);
+                size = fread(socket.send_buffer.data + 1, sizeof(byte), DATAGRAM_SIZE - 20, fp);
                 fclose(fp);
 
-                printf("\n%d\n", size);
+                //printf("\nBlock id: %d, ns %d", blockID, size);
 
-                socket.send_buffer.length = size + 1;
+                socket.send_buffer.data[1] = size >> 8;
+                socket.send_buffer.data[2] = size;
+
+                socket.send_buffer.length = size + 3;
                 RC6_encrypt(socket.send_buffer, sym, rc6_output);
 
                 send(socket.socket_fd, rc6_output.data, get_encrypted_block_length(socket.send_buffer.length), 0);

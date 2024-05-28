@@ -53,7 +53,7 @@ int list_folder_request(socket_wb socket, byte_array sym, byte_array *ls_buffer)
     send(socket.socket_fd, rc6_output.data,get_encrypted_block_length(socket.send_buffer.length), 0);
 
     ssize_t bytes;
-    if ((bytes = recv(socket.socket_fd, socket.recv_buffer.data, DATAGRAM_SIZE - 1, 0)) < 1) {
+    if ((bytes = recv(socket.socket_fd, socket.recv_buffer.data, DATAGRAM_SIZE, 0)) < 1) {
         printf("Failed to receive data");
         err = -1;
         goto finally;
@@ -102,7 +102,7 @@ int request_file(socket_wb socket, byte_array sym, char* file_name)
     send(socket.socket_fd, rc6_output.data,get_encrypted_block_length(socket.send_buffer.length), 0);
 
     ssize_t bytes;
-    if ((bytes = recv(socket.socket_fd, socket.recv_buffer.data, DATAGRAM_SIZE - 1, 0)) < 1) {
+    if ((bytes = recv(socket.socket_fd, socket.recv_buffer.data, DATAGRAM_SIZE, 0)) < 1) {
         printf("Failed to receive data");
         err = -1;
         goto finally;
@@ -155,8 +155,8 @@ int request_block(socket_wb socket, byte_array sym, char* file_name, int blockID
     send(socket.socket_fd, rc6_output.data,get_encrypted_block_length(socket.send_buffer.length), 0);
 
     ssize_t bytes;
-    if ((bytes = recv(socket.socket_fd, socket.recv_buffer.data, DATAGRAM_SIZE - 1, 0)) < 1) {
-        printf("Failed to receive data");
+    if ((bytes = recv(socket.socket_fd, socket.recv_buffer.data, DATAGRAM_SIZE, 0)) < 1) {
+        printf("Failed to receive data Client");
         err = -1;
         goto finally;
     }
@@ -171,9 +171,11 @@ int request_block(socket_wb socket, byte_array sym, char* file_name, int blockID
         goto finally;
     }
 
-    block_buffer->length = bytes - 1;
+    block_buffer->length = (rc6_output.data[1] << 8) + rc6_output.data[2];
 
     memcpy(block_buffer->data, rc6_output.data + 1, block_buffer->length);
+
+    //printf("\nBlock buffer : %d", block_buffer->length);
 
     finally:
     free(rc6_output.data);
