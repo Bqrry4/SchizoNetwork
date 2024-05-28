@@ -37,38 +37,11 @@ int main() {
     printf("\n");
 
     pid_t pid = fork();
-    if (pid != 0) {//child will listen for connection requests
+    if (pid == 0) {//child will listen for connection requests
 
         chdir("./folder1");
 
-        int listener_socket = listen_for_connections();
-
-        byte_array send_buffer, recv_buffer;
-        send_buffer.data = calloc(DATAGRAM_SIZE, 1);
-        recv_buffer.data = calloc(DATAGRAM_SIZE, 1);
-
-        socket_wb socketWb = {
-                .socket_fd = listener_socket,
-                .recv_buffer = recv_buffer,
-                .send_buffer = send_buffer
-        };
-
-        byte_array sym_key = {
-                .data = malloc(DATAGRAM_SIZE)
-        };
-
-        if(accept_handshake(socketWb, key, &sym_key))
-        {
-            perror("Failed to init handshake");
-        }
-
-        listen_for_requests(socketWb, sym_key);
-
-        free(recv_buffer.data);
-        free(send_buffer.data);
-        free(sym_key.data);
-        close_socket(listener_socket);
-
+        listen_for_connections(key);
 
     } else {//parent will connect
 

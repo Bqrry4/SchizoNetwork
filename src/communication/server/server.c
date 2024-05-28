@@ -5,6 +5,7 @@
 #include "server.h"
 #include "../communication_commons.h"
 #include "RC6.h"
+#include "../handshake/handshake.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -12,7 +13,7 @@
 #include <netinet/in.h>
 #include <linux/limits.h>
 
-int listen_for_connections() {
+int listen_for_connections(rsa_keys key) {
     int listen_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (listen_socket < 0) {
         perror("Failed to create listen_socket");
@@ -34,36 +35,47 @@ int listen_for_connections() {
         return -1;
     }
 
-    //@TODO launch sock_recv in a new process
-    int sock_recv = accept(listen_socket, (struct sockaddr *) &address, &addrlen);
-    if (sock_recv < 0) {
-        perror("Failed to accept connection");
-        return -1;
-    }
-
-    close(listen_socket);
-    return sock_recv;
-    ssize_t bytes;
-    byte_array network_buffer;
-    network_buffer.data = malloc(DATAGRAM_SIZE);
-    //read buffer
-    while (true) {
-        bytes = recv(sock_recv, network_buffer.data, DATAGRAM_SIZE - 1, 0);
-        if (bytes < 0) {
-            perror("Failed to read from network_buffer");
-            continue;
-        }
-        if (bytes == 0) {
-            printf("Socket closed\n");
-            break;
+    while(true)
+    {
+        int sock_recv = accept(listen_socket, (struct sockaddr *) &address, &addrlen);
+        if (sock_recv < 0) {
+            perror("Failed to accept connection");
+            return -1;
         }
 
-        network_buffer.length = bytes;
-        onRead(sock_recv, network_buffer);
+        pid_t pid = fork();
+        if (pid == 0)
+        {
+            byte_array send_buffer, recv_buffer;
+            send_buffer.data = calloc(DATAGRAM_SIZE, 1);
+            recv_buffer.data = calloc(DATAGRAM_SIZE, 1);
+
+            int listener_socket = sock_recv;
+            socket_wb socketWb = {
+                    .socket_fd = listener_socket,
+                    .recv_buffer = recv_buffer,
+                    .send_buffer = send_buffer
+            };
+
+            byte_array sym_key = {
+                    .data = malloc(DATAGRAM_SIZE)
+            };
+
+            if(accept_handshake(socketWb, key, &sym_key))
+            {
+                perror("Failed to init handshake");
+            }
+
+            listen_for_requests(socketWb, sym_key);
+
+            free(recv_buffer.data);
+            free(send_buffer.data);
+            free(sym_key.data);
+            close_socket(listener_socket);
+        }
     }
 
-    free(network_buffer.data);
-    close(sock_recv);
+
     close(listen_socket);
     return 0;
 }
