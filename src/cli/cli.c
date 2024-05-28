@@ -89,7 +89,10 @@ void scan_network(char *out_address) {
         if (strlen(final_buffer) < 7) {
             printf("Scan found no other schizo prophets on this network. Press ENTER to try again.");
             getchar();
-        } else break;
+        } else {
+            pclose(nmap_pipe);
+            break;
+        }
     }
     int line_count = get_line_count(final_buffer);
 
