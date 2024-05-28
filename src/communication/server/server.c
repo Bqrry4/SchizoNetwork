@@ -106,8 +106,8 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
     int err = 0;
     ssize_t bytes;
     byte_array rc6_output = {
-            .data = malloc(4096),
-            .length = 4096
+            .data = malloc(DATAGRAM_SIZE),
+            .length = DATAGRAM_SIZE
     };
 
     while (true) {
@@ -121,12 +121,12 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
         RC6_decrypt(socket.recv_buffer, sym, rc6_output);
 
         switch (rc6_output.data[0]) {
-            case 100:
+            case LIST_FOLDER:
                 socket.send_buffer.data[0] = 100;
 
                 byte_array ls_dir = {
                         .data = socket.send_buffer.data + 3,
-                        4093
+                        DATAGRAM_SIZE - 1
                 };
 
                 if (list_work_dir(&ls_dir)) {
@@ -141,10 +141,56 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
                 RC6_encrypt(socket.send_buffer, sym, rc6_output);
                 send(socket.socket_fd, rc6_output.data, get_encrypted_block_length(socket.send_buffer.length), 0);
                 break;
-            case 101:
+            case FILE_REQUEST:
+                //parse the filename
+                int file_name_len = (rc6_output.data[1] << 8) + rc6_output.data[2];
+                char* filename = malloc(file_name_len);
+                memcpy(filename, rc6_output.data + 3, file_name_len);
 
+                FILE *fp = fopen(filename, "r");
+                fseek(fp, 0, SEEK_END); // seek to end of file
+                ulong size = ftell(fp);
+                fclose(fp);
 
+                ulong blocks_num = size / (DATAGRAM_SIZE - 1); // 1 byte for header
+                blocks_num += (size % (DATAGRAM_SIZE - 1)) != 0 ? 1 : 0;
+                //return the number of blocks
+
+                socket.send_buffer.data[0] = 101;
+                socket.send_buffer.data[1] = blocks_num >> 8;
+                socket.send_buffer.data[2] = blocks_num;
+
+                socket.send_buffer.length = 3;
+                RC6_encrypt(socket.send_buffer, sym, rc6_output);
+                send(socket.socket_fd, rc6_output.data, get_encrypted_block_length(socket.send_buffer.length), 0);
+
+                free(filename);
                 break;
+            case BLOCK_REQUEST:
+                //parse the filename
+                file_name_len = (rc6_output.data[1] << 8) + rc6_output.data[2];
+                filename = malloc(file_name_len);
+                memcpy(filename, rc6_output.data + 3, file_name_len);
+                //parse the block id
+                int blockID = (rc6_output.data[file_name_len + 3] << 24) + (rc6_output.data[file_name_len + 4] << 16) + (rc6_output.data[file_name_len + 5] << 8) + rc6_output.data[6];
+
+                socket.send_buffer.data[0] = BLOCK_REQUEST;
+
+                fp = fopen(filename, "r");
+                fseek(fp, blockID * (DATAGRAM_SIZE - 1), SEEK_SET);
+                size = fread(socket.send_buffer.data + 1, sizeof(byte), DATAGRAM_SIZE - 1, fp);
+                fclose(fp);
+
+                printf("\n%d\n", size);
+
+                socket.send_buffer.length = size + 1;
+                RC6_encrypt(socket.send_buffer, sym, rc6_output);
+
+                send(socket.socket_fd, rc6_output.data, get_encrypted_block_length(socket.send_buffer.length), 0);
+
+                free(filename);
+                break;
+
         }
     }
 

@@ -38,6 +38,9 @@ int main() {
 
     pid_t pid = fork();
     if (pid == 0) {//child will listen for connection requests
+
+        chdir("./folder1");
+
         int listener_socket = listen_for_connections();
 
         byte_array send_buffer, recv_buffer;
@@ -51,7 +54,7 @@ int main() {
         };
 
         byte_array sym_key = {
-                .data = malloc(4096)
+                .data = malloc(DATAGRAM_SIZE)
         };
 
         if(accept_handshake(socketWb, key, &sym_key))
@@ -69,6 +72,8 @@ int main() {
 
     } else {//parent will connect
 
+        chdir("./folder2");
+
         //@TODO Here will be the CLI
 
 
@@ -76,7 +81,7 @@ int main() {
         sleep(5);
 
         byte_array sym_key = {
-                .data = malloc(4096)
+                .data = malloc(DATAGRAM_SIZE)
         };
 
         int connection_socket = connect_to("127.0.0.1", PORT);
@@ -97,16 +102,39 @@ int main() {
             perror("Failed to init handshake");
         }
 
-        //request
+        //List folder request
         byte_array ls_buffer = {
                 .data = calloc(DATAGRAM_SIZE, 1),
-                .length = 4096
+                .length = DATAGRAM_SIZE
         };
 
         list_folder_request(socketWb, sym_key, &ls_buffer);
 
         printf("\n%s", ls_buffer.data);
 
+        char* filename = "VIPASSI-Sunyata-MP3.zip";
+        //Request the file
+        int blocks_num = request_file(socketWb, sym_key, filename);
+        printf("\n Blocks %d \n", blocks_num);
+
+
+        byte_array block_buffer = {
+                .data = calloc(DATAGRAM_SIZE, 1),
+                .length = DATAGRAM_SIZE
+        };
+        FILE *fp = fopen(filename, "w");
+        for (int i = 0; i < blocks_num; ++i) {
+            //request block
+            request_block(socketWb, sym_key, filename, i,  &block_buffer);
+            //move pointer
+            fseek(fp, i*DATAGRAM_SIZE , SEEK_SET);
+            //write
+            fwrite(block_buffer.data, sizeof(byte), block_buffer.length, fp);
+        }
+        fclose(fp);
+
+        free(block_buffer.data);
+        free(ls_buffer.data);
         free(recv_buffer.data);
         free(send_buffer.data);
         free(sym_key.data);

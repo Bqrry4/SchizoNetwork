@@ -20,4 +20,8 @@ typedef struct {
 
 void close_socket(int socket_fd);
 
+#define LIST_FOLDER 100
+#define FILE_REQUEST 101
+#define BLOCK_REQUEST 102
+
 #endif //SI_PROIECT_COMMUNICATION_COMMONS_H
