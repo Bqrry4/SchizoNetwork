@@ -10,7 +10,6 @@
 #include "communication/client/client.h"
 #include "communication/communication_commons.h"
 #include "communication/handshake/handshake.h"
-#include "cli/cli.h"
 
 int main() {
 
@@ -39,37 +38,79 @@ int main() {
 
     pid_t pid = fork();
     if (pid == 0) {//child will listen for connection requests
-        int listener_socket = listen_for_connections(onRead);
 
+        chdir("./folder1");
 
-        byte_array sym_key;
-
-        if(accept_handshake(listener_socket, key, &sym_key))
-        {
-            perror("Failed to init handshake");
-        }
-
-        close_socket(listener_socket);
-
+        listen_for_connections(key);
 
     } else {//parent will connect
 
+        chdir("./folder2");
+
         //@TODO Here will be the CLI
 
-        init_cli();
 
         //@FIXME cuz of the "loopback"
         sleep(5);
-        byte_array sym_key;
 
+        byte_array sym_key = {
+                .data = malloc(DATAGRAM_SIZE)
+        };
 
         int connection_socket = connect_to("127.0.0.1", PORT);
-        if(init_handshake(connection_socket, key, &sym_key))
+
+        byte_array send_buffer, recv_buffer;
+        send_buffer.data = calloc(DATAGRAM_SIZE, 1);
+        recv_buffer.data = calloc(DATAGRAM_SIZE, 1);
+
+        socket_wb socketWb = {
+                .socket_fd = connection_socket,
+                .recv_buffer = recv_buffer,
+                .send_buffer = send_buffer
+        };
+
+
+        if(init_handshake(socketWb, key, &sym_key))
         {
             perror("Failed to init handshake");
         }
 
+        //List folder request
+        byte_array ls_buffer = {
+                .data = calloc(DATAGRAM_SIZE, 1),
+                .length = DATAGRAM_SIZE
+        };
 
+        list_folder_request(socketWb, sym_key, &ls_buffer);
+
+        printf("\n%s", ls_buffer.data);
+
+        char* filename = "poto.png";
+        //Request the file
+        int blocks_num = request_file(socketWb, sym_key, filename);
+        printf("\n Blocks %d \n", blocks_num);
+
+
+        byte_array block_buffer = {
+                .data = calloc(DATAGRAM_SIZE, 1),
+                .length = DATAGRAM_SIZE
+        };
+        FILE *fp = fopen(filename, "w");
+        for (int i = 0; i < blocks_num; ++i) {
+            //request block
+            request_block(socketWb, sym_key, filename, i,  &block_buffer);
+            //move pointer
+            fseek(fp, i*(DATAGRAM_SIZE - 10) , SEEK_SET);
+            //write
+            fwrite(block_buffer.data, sizeof(byte), block_buffer.length, fp);
+        }
+        fclose(fp);
+
+        free(block_buffer.data);
+        free(ls_buffer.data);
+        free(recv_buffer.data);
+        free(send_buffer.data);
+        free(sym_key.data);
         close_socket(connection_socket);
 
     }
