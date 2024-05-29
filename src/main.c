@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include "algorithms/RSA/RSA.h"
 #include "communication/server/server.h"
 #include "communication/client/client.h"
@@ -61,6 +62,8 @@ int main() {
         byte_array sym_key = {
                 .data = malloc(DATAGRAM_SIZE)
         };
+//        printf("\n%s\n", address);
+//        getchar();
 
         int connection_socket = connect_to(address, PORT);
 
@@ -70,6 +73,7 @@ int main() {
 
         socket_wb socketWb = {
                 .socket_fd = connection_socket,
+
                 .recv_buffer = recv_buffer,
                 .send_buffer = send_buffer
         };
@@ -130,6 +134,7 @@ int main() {
         free(options);
         close_socket(connection_socket);
 
+        kill(pid, SIGINT);
     }
 
     //free key

@@ -12,6 +12,16 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <linux/limits.h>
+#include <signal.h>
+
+bool is_running = true;
+
+void sigchld_handler(int signo, siginfo_t *sinfo, void *context) {
+    if (signo == SIGINT) {
+        printf("child killed");
+        is_running = false;
+    }
+}
 
 int listen_for_connections(rsa_keys key) {
     int listen_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -35,17 +45,28 @@ int listen_for_connections(rsa_keys key) {
         return -1;
     }
 
-    while(true)
-    {
+    struct sigaction act;
+
+    memset(&act, 0, sizeof(struct sigaction));
+    sigemptyset(&act.sa_mask);
+
+    act.sa_sigaction = sigchld_handler;
+
+    act.sa_flags = SA_SIGINFO;
+
+    if (-1 == sigaction(SIGINT, &act, NULL)) {
+        perror("sigaction()");
+        exit(EXIT_FAILURE);
+    }
+    while (is_running) {
         int sock_recv = accept(listen_socket, (struct sockaddr *) &address, &addrlen);
         if (sock_recv < 0) {
             perror("Failed to accept connection");
-            return -1;
+            break;
         }
 
         pid_t pid = fork();
-        if (pid == 0)
-        {
+        if (pid == 0) {
             byte_array send_buffer, recv_buffer;
             send_buffer.data = calloc(DATAGRAM_SIZE, 1);
             recv_buffer.data = calloc(DATAGRAM_SIZE, 1);
@@ -61,17 +82,17 @@ int listen_for_connections(rsa_keys key) {
                     .data = malloc(DATAGRAM_SIZE)
             };
 
-            if(accept_handshake(socketWb, key, &sym_key))
-            {
-                perror("Failed to init handshake");
-            }
+            if (accept_handshake(socketWb, key, &sym_key)) {
+                perror("Failed to accept handshake");
+            } else {
+                listen_for_requests(socketWb, sym_key);
 
-            listen_for_requests(socketWb, sym_key);
+                close_socket(listener_socket);
+            }
 
             free(recv_buffer.data);
             free(send_buffer.data);
             free(sym_key.data);
-            close_socket(listener_socket);
         }
     }
 
@@ -156,7 +177,7 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
             case FILE_REQUEST:
                 //parse the filename
                 int file_name_len = (rc6_output.data[1] << 8) + rc6_output.data[2];
-                char* filename = malloc(file_name_len);
+                char *filename = malloc(file_name_len);
                 memcpy(filename, rc6_output.data + 3, file_name_len);
 
                 FILE *fp = fopen(filename, "r");
@@ -167,7 +188,7 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
                 //printf("\nOCTETS %d", size);
 
                 ulong blocks_num = size / (DATAGRAM_SIZE - 10); // 1 byte for header
-                blocks_num += ((size % (DATAGRAM_SIZE - 10)) != 0 ) ? 1 : 0;
+                blocks_num += ((size % (DATAGRAM_SIZE - 10)) != 0) ? 1 : 0;
                 //return the number of blocks
 
                 socket.send_buffer.data[0] = 101;
@@ -186,7 +207,8 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
                 filename = malloc(file_name_len);
                 memcpy(filename, rc6_output.data + 3, file_name_len);
                 //parse the block id
-                int blockID = (rc6_output.data[file_name_len + 3] << 24) + (rc6_output.data[file_name_len + 4] << 16) + (rc6_output.data[file_name_len + 5] << 8) + rc6_output.data[file_name_len + 6];
+                int blockID = (rc6_output.data[file_name_len + 3] << 24) + (rc6_output.data[file_name_len + 4] << 16) +
+                              (rc6_output.data[file_name_len + 5] << 8) + rc6_output.data[file_name_len + 6];
 
                 memset(socket.send_buffer.data, 0, DATAGRAM_SIZE);
 
