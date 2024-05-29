@@ -144,8 +144,8 @@ int init_handshake(socket_wb socket, rsa_keys key, byte_array *sym_key) {
 
     mpz_add(rand, rand, serv_rand);
 
-//    printf("\nKey:");
-//    mpz_out_str(stdout, 10, rand);
+    printf("\nKey:");
+    mpz_out_str(stdout, 10, rand);
 
     mpz_export(sym_key->data, &(sym_key->length), 1, sizeof(sym_key->data[0]), 0, 0, rand);
 
@@ -275,8 +275,8 @@ int accept_handshake(socket_wb socket, rsa_keys key, byte_array *sym_key) {
 
     mpz_add(rand, rand, clnt_rand);
 
-//    printf("\nKey:");
-//    mpz_out_str(stdout, 10, rand);
+    printf("\nKey:");
+    mpz_out_str(stderr, 10, rand);
 
 
     mpz_export(sym_key->data, &(sym_key->length), 1, sizeof(sym_key->data[0]), 0, 0, rand);

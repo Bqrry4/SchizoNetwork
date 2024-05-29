@@ -144,6 +144,9 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
     };
 
     while (true) {
+
+        memset(socket.recv_buffer.data, 0, DATAGRAM_SIZE);
+
         if ((bytes = recv(socket.socket_fd, socket.recv_buffer.data, DATAGRAM_SIZE, 0)) < 1) {
             printf("Failed to receive data");
             err = -1;
@@ -151,7 +154,11 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
         }
         socket.recv_buffer.length = bytes;
 
+        memset(rc6_output.data, 0, DATAGRAM_SIZE);
+
         RC6_decrypt(socket.recv_buffer, sym, rc6_output);
+
+        memset(socket.send_buffer.data, 0, DATAGRAM_SIZE);
 
         switch (rc6_output.data[0]) {
             case LIST_FOLDER:
@@ -171,6 +178,8 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
 
                 socket.send_buffer.length = ls_dir.length + 3;
 
+                memset(rc6_output.data, 0, DATAGRAM_SIZE);
+
                 RC6_encrypt(socket.send_buffer, sym, rc6_output);
                 send(socket.socket_fd, rc6_output.data, get_encrypted_block_length(socket.send_buffer.length), 0);
                 break;
@@ -187,8 +196,8 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
 
                 //printf("\nOCTETS %d", size);
 
-                ulong blocks_num = size / (DATAGRAM_SIZE - 10); // 1 byte for header
-                blocks_num += ((size % (DATAGRAM_SIZE - 10)) != 0) ? 1 : 0;
+                ulong blocks_num = size / (DATAGRAM_SIZE/2); // 1 byte for header
+                blocks_num += ((size % (DATAGRAM_SIZE/2)) != 0) ? 1 : 0;
                 //return the number of blocks
 
                 socket.send_buffer.data[0] = 101;
@@ -196,6 +205,9 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
                 socket.send_buffer.data[2] = blocks_num;
 
                 socket.send_buffer.length = 3;
+
+                memset(rc6_output.data, 0, DATAGRAM_SIZE);
+
                 RC6_encrypt(socket.send_buffer, sym, rc6_output);
                 send(socket.socket_fd, rc6_output.data, get_encrypted_block_length(socket.send_buffer.length), 0);
 
@@ -215,8 +227,8 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
                 socket.send_buffer.data[0] = BLOCK_REQUEST;
 
                 fp = fopen(filename, "r");
-                fseek(fp, blockID * (DATAGRAM_SIZE - 10), SEEK_SET);
-                size = fread(socket.send_buffer.data + 3, sizeof(byte), DATAGRAM_SIZE - 10, fp);
+                fseek(fp, blockID * (DATAGRAM_SIZE/2), SEEK_SET);
+                size = fread(socket.send_buffer.data + 3, sizeof(byte), DATAGRAM_SIZE/2, fp);
                 fclose(fp);
 
                 //printf("\nBlock id: %d, ns %d", blockID, size);
@@ -225,6 +237,9 @@ int listen_for_requests(socket_wb socket, byte_array sym) {
                 socket.send_buffer.data[2] = size;
 
                 socket.send_buffer.length = size + 3;
+
+                memset(rc6_output.data, 0, DATAGRAM_SIZE);
+
                 RC6_encrypt(socket.send_buffer, sym, rc6_output);
 
                 send(socket.socket_fd, rc6_output.data, get_encrypted_block_length(socket.send_buffer.length), 0);

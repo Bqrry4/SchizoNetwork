@@ -131,6 +131,8 @@ int request_block(socket_wb socket, byte_array sym, char* file_name, int blockID
 {
     int err = 0;
 
+    memset(socket.send_buffer.data, 0, DATAGRAM_SIZE);
+
     //Send block request
     socket.send_buffer.data[0] = BLOCK_REQUEST;
     ulong file_name_len = strlen(file_name) + 1;  //include the null terminator
@@ -146,7 +148,7 @@ int request_block(socket_wb socket, byte_array sym, char* file_name, int blockID
     socket.send_buffer.length = file_name_len + 7;
 
     byte_array rc6_output = {
-            .data = malloc(DATAGRAM_SIZE),
+            .data = calloc(DATAGRAM_SIZE, 1),
             .length = DATAGRAM_SIZE
     };
 
@@ -163,6 +165,9 @@ int request_block(socket_wb socket, byte_array sym, char* file_name, int blockID
     }
 
     socket.recv_buffer.length = bytes;
+
+    memset(rc6_output.data, 0, DATAGRAM_SIZE);
+
     RC6_decrypt(socket.recv_buffer, sym, rc6_output);
 
     if(rc6_output.data[0] != BLOCK_REQUEST)

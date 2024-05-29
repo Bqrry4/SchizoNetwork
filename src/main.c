@@ -39,7 +39,7 @@ int main() {
 //    printf("\n");
 
     pid_t pid = fork();
-    if (pid == 0) {//child will listen for connection requests
+    if (pid != 0) {//child will listen for connection requests
 
         chdir("./folder1");
 
@@ -117,7 +117,7 @@ int main() {
             //request block
             request_block(socketWb, sym_key, filename, i, &block_buffer);
             //move pointer
-            fseek(fp, i * (DATAGRAM_SIZE - 10), SEEK_SET);
+            fseek(fp, i * (DATAGRAM_SIZE/2), SEEK_SET);
             //write
             fwrite(block_buffer.data, sizeof(byte), block_buffer.length, fp);
             print_progress(i, blocks_num - 1);
