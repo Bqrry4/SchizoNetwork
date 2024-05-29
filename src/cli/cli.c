@@ -78,7 +78,7 @@ void scan_network(char *out_address) {
 
     while (true) {
         memset(final_buffer, 0, 4096);
-        FILE *nmap_pipe = popen("nmap -n 192.168.0.0/24 -p 35544 -oG - | awk '/Up$/{print $2}'", "r");
+        FILE *nmap_pipe = popen("nmap -n 192.168.0.0/24 -p 35546 -oG - | awk '/Up$/{print $2}'", "r");
         printf("Scan started...\n");
 
         while (fgets(nmap_temp_buffer, 4096, nmap_pipe) != NULL) {

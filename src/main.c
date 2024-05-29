@@ -56,13 +56,13 @@ int main() {
 
         char *address = malloc(sizeof(char) * 16);
 
-        //scan_network(address);
+        scan_network(address);
 
         byte_array sym_key = {
                 .data = malloc(DATAGRAM_SIZE)
         };
 
-        int connection_socket = connect_to("127.0.0.1", PORT);
+        int connection_socket = connect_to(address, PORT);
 
         byte_array send_buffer, recv_buffer;
         send_buffer.data = calloc(DATAGRAM_SIZE, 1);
